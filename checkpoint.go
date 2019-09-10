@@ -15,6 +15,18 @@ type Checkpoint struct {
 	c *C.rocksdb_checkpoint_t
 }
 
+// NewCheckpoint creates a new checkpoint object for the given db.
+func NewCheckpoint(db *DB) (*Checkpoint, error) {
+	var cErr *C.char
+
+	cHandle := C.rocksdb_checkpoint_object_create(db.c, &cErr)
+	if cErr != nil {
+		defer C.free(unsafe.Pointer(cErr))
+		return nil, errors.New(C.GoString(cErr))
+	}
+	return NewNativeCheckpoint(cHandle), nil
+}
+
 // NewNativeCheckpoint creates a new checkpoint.
 func NewNativeCheckpoint(c *C.rocksdb_checkpoint_t) *Checkpoint {
 	return &Checkpoint{c}
