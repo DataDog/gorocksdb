@@ -28,3 +28,17 @@ extern void gorocksdb_mergeoperator_delete_value(void* state, const char* v, siz
 /* Slice Transform */
 
 extern rocksdb_slicetransform_t* gorocksdb_slicetransform_create(uintptr_t idx);
+
+/* Statistics/Tickers */
+#ifdef __cplusplus__
+extern "C" {
+#endif
+
+uint64_t gorocksdb_get_ticker_count(rocksdb_options_t *options, uint32_t ticker);
+uint64_t gorocksdb_get_and_reset_ticker_count(rocksdb_options_t *options, uint32_t ticker);
+void gorocksdb_set_stats_level(rocksdb_options_t *options, uint8_t level);
+uint8_t gorocksdb_get_stats_level(rocksdb_options_t *options);
+
+#ifdef __cplusplus__
+}
+#endif

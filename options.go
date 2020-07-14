@@ -69,6 +69,170 @@ const (
 	SkipAnyCorruptedRecordsRecovery      = WALRecoveryMode(3)
 )
 
+type Ticker uint32
+
+// Options for use in GetTickerCount and GetAndResetTickerCount
+// For definitions of individual flags, see <rocksdb/statistics.h>
+const (
+	BlockCacheMiss             = Ticker(0)
+	BlockCacheHit
+	BlockCacheAdd
+	BlockCacheAddFailures
+	BlockCacheIndexMiss
+	BlockCacheIndexHit
+	BlockCacheIndexAdd
+	BlockCacheIndexBytesInsert
+	BlockCacheIndexBytesEvict
+	BlockCacheDataMiss
+	BlockCacheDataHit
+	BlockCacheDataAdd
+	BlockCacheDataBytesInsert
+	BlockCacheBytesRead
+	BlockCacheBytesWrite
+	BloomFilterUseful
+	BloomFilterFullPositive
+	BloomFilterFullTruePositive
+	BloomFilterMicros
+	PersistentCacheHit
+	PersistentCacheMiss
+	SimBlockCacheHit
+	SimBlockCacheMiss
+	MemtableHit
+	MemtableMiss
+	GetHitL0
+	GetHitL1
+	GetHitL2AndUp
+	CompactionKeyDropNewerEntry
+	CompcationKeyDropObsolete
+	CompactionKeyDropRangeDel
+	CompactionKeyDropUser
+	CompactionRangeDelDropObsolete
+	CompactionOptimizedDelDropObsolete
+	CompactionCancelled
+	NumberKeysWritten
+	NumberKeysRead
+	NumberKeysUpdated
+	BytesWritten
+	BytesRead
+	NumberDbSeek
+	NumberDbNext
+	NumberDbPrev
+	NumberDbSeekFound
+	NumberDbNextFound
+	NumberDbPrevFound
+	IterBytesRead
+	NoFileCloses
+	NoFileOpens
+	NoFileErrors
+	StallL0SlowdownMicros
+	StallMemtableCompactionMicros
+	StallL0NumFilesMicros
+	StallMicros
+	DbMutexWaitMicros
+	RateLimitDelayMillis
+	NoIterators           // Deprecated
+	NumberMultigetCalls
+	NumberMultigetKeysRead
+	NumberMultigetBytesRead
+	NumberFilteredDeletes
+	NumberMergeFailures
+	BloomFilterPrefixChecked
+	BloomFilterPrefixUseful
+	NumberOfReseeksInIteration
+	GetUpdatesSinceCalls
+	BlockCacheCompressedHit
+	BlockCacheCompressedAdd
+	BlockCacheCompressedAddFailures
+	WalFileSynced
+	WalFileBytes
+	WriteDoneBySelf
+	WriteDoneByOthers
+	WriteTimeout
+	WriteWithWal
+	CompactReadBytes
+	CompactWriteBytes
+	FlushWriteBytes
+	NumberDirectLoadTableProperties
+	NumberSuperversionAcquires
+	NumberSuperversionReleases
+	NumberSuperversionCleanups
+	NumberBlockCompressed
+	NumberBlockDecompressed
+	NumberBlockNotCompressed
+	MergeOperationTotalTime
+	FilterOperationTotalTime
+	RowCacheHit
+	RowCacheMiss
+	ReadAmpEstimateUsefulBytes
+	ReadAmpTotalReadBytes
+	NumberRateLimiterDrains
+	NumberIterSkip
+	BlobDbNumPut
+	BlobDbNumWrite
+	BlobDbNumGet
+	BobDbNumMultiget
+	BlobDbNumSeek
+	BlobDbNumNext
+	BlobDbNumPrev
+	BlobDbNumKeysWritten
+	BlobDbNumKeysRead
+	BlobDbBytesWritten
+	BlobDbBytesRead
+	BlobDbWriteInlined
+	BlobDbWriteInlinedTtl
+	BlobDbWriteBlob
+	BlobDbWriteBlobTtl
+	BlobDbBlobFileBytesWritten
+	BlobDbBlobFileBytesRead
+	BlobDbBlobFileSynced
+	BlobDbBlobInlineExpiredCount
+	BlobDbBlobIndexExpiredSize
+	BlobDbBlobIndexEvictedCount
+	BlobDbBlobIndexEvictedSize
+	BlobDbGcNumFiles
+	BlobDbGcFailures
+	BlobDbGcNumKeysOverwritten
+	BlobDbGcNumKeysExpired
+	BlobDbGcNumKeysRelocated
+	BlobDbGcBytesOverwritten
+	BlobDbGcBytesExpired
+	BlobDbGcBytesRelocated
+	BlobDbFifoNumFilesEvicted
+	BlobDbFifoNumKeysEvicted
+	BlobDbFifoBytesEvicted
+    TxnPrepareMutexOverhead
+	TxnOldCommitMapMutexOverhead
+	TxnDuplicateKeyOverhead
+	TxnSnapshotMutexOverhead
+	NumberMultigetKeysFound
+	NoIteratorCreated
+	NoIteratorDeleted
+	BlockCacheCompressionDictMiss
+	BlockCacheCompressionDictHit
+	BlockCacheCompressionDictAdd
+	BlockCacheCompressionDictBytesInsert
+	BlockCacheCompressionDictBytesEvict
+	BlockCacheAddRedundant
+	BlockCacheIndexAddRedundant
+	BlockCacheFilterAddRedundant
+	BlockCacheDataAddRedundant
+	BlockCacheCompressionDictAddRedundant
+	FilesMarkedTrash
+	FilesDeletedImmediately
+	TickerMax
+)
+
+type StatsLevel byte
+
+const (
+	StatsExceptHistogramOrTimers = StatsLevel(0)
+	StatsExceptTimers
+	StatsExceptDetailedTimers
+	StatsExceptTimeForMutex
+	StatsAll
+)
+
+
 // Options represent all of the available options when opening a database with Open.
 type Options struct {
 	c *C.rocksdb_options_t
@@ -1210,4 +1374,26 @@ func (opts *Options) Destroy() {
 	opts.c = nil
 	opts.env = nil
 	opts.bbto = nil
+}
+
+// GetTickerCount
+func (opts *Options) GetTickerCount(ticker Ticker) uint64 {
+	retval, _ := C.gorocksdb_get_ticker_count(opts.c, C.uint(ticker))
+
+	return uint64(retval)
+}
+
+func (opts *Options) GetAndResetTickerCount(ticker Ticker) uint64 {
+	retval, _ := C.gorocksdb_get_and_reset_ticker_count(opts.c, C.uint(ticker))
+
+	return uint64(retval)
+}
+
+func (opts *Options) SetStatsLevel(sl StatsLevel) {
+	C.gorocksdb_set_stats_level(opts.c, C.uchar(sl))
+}
+
+func (opts *Options) GetStatsLevel() StatsLevel {
+	ret := C.gorocksdb_get_stats_level(opts.c)
+    return StatsLevel(ret)
 }
