@@ -90,8 +90,6 @@ func TestStatistics(t *testing.T) {
 	assert.Equal("y2", string(it.Value().Data()), "Incorrect value found")
 	assert.Equal(uint64(5), opts.GetTickerCount(BlockCacheMiss), "Incorrect block miss count")
 	assert.Equal(uint64(0), opts.GetTickerCount(BlockCacheHit), "Incorrect block hit count")
-	assert.Equal(uint64(0), opts.GetTickerCount(BlockCacheDataMiss), "Incorrect block data miss count")
-	assert.Equal(uint64(0), opts.GetTickerCount(BlockCacheDataHit), "Incorrect block data hit count")
 
 	it.Seek([]byte("a2"))
 	assert.True(it.Valid(), "Failed iterator seek")
@@ -99,8 +97,6 @@ func TestStatistics(t *testing.T) {
 	assert.Equal("x2", string(it.Value().Data()), "Incorrect value found")
 	assert.Equal(uint64(8), opts.GetTickerCount(BlockCacheMiss), "Incorrect block miss count")
 	assert.Equal(uint64(2), opts.GetTickerCount(BlockCacheHit), "Incorrect block hit count")
-	assert.Equal(uint64(0), opts.GetTickerCount(BlockCacheDataMiss), "Incorrect block data miss count")
-	assert.Equal(uint64(0), opts.GetTickerCount(BlockCacheDataHit), "Incorrect block data hit count")
 
 	it.Seek([]byte("c2"))
 	assert.True(it.Valid(), "Failed iterator seek")

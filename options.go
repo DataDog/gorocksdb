@@ -225,7 +225,7 @@ const (
 type StatsLevel byte
 
 const (
-	StatsExceptHistogramOrTimers = StatsLevel(0)
+	StatsExceptHistogramOrTimers = StatsLevel(iota)
 	StatsExceptTimers
 	StatsExceptDetailedTimers
 	StatsExceptTimeForMutex
@@ -1390,18 +1390,22 @@ func (opts *Options) GetAndResetTickerCount(ticker Ticker) uint64 {
 	return uint64(retval)
 }
 
+// RecordTick adds count to the specified ticker
 func (opts *Options) RecordTick(ticker Ticker, count uint64) {
 	C.rocksdb_record_tick(opts.c, C.uint(ticker), C.ulonglong(count))
 }
 
+// SetTickerCount sets the current ticker count.
 func (opts *Options) SetTickerCount(ticker Ticker, count uint64) {
 	C.rocksdb_set_ticker_count(opts.c, C.uint(ticker), C.ulonglong(count))
 }
 
+// SetStatsLevel sets the current statistics logging level - See <rocksdb/statistics.h> for more information
 func (opts *Options) SetStatsLevel(sl StatsLevel) {
 	C.rocksdb_set_stats_level(opts.c, C.uchar(sl))
 }
 
+// GetStatsLevel retrieves the current statistics logging level - See <rocksdb/statistics.h> for more information
 func (opts *Options) GetStatsLevel() StatsLevel {
 	ret := C.rocksdb_get_stats_level(opts.c)
     return StatsLevel(ret)
