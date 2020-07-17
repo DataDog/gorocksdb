@@ -74,7 +74,7 @@ type Ticker uint32
 // Options for use in GetTickerCount and GetAndResetTickerCount
 // For definitions of individual flags, see <rocksdb/statistics.h>
 const (
-	BlockCacheMiss             = Ticker(0)
+	BlockCacheMiss             = Ticker(iota)
 	BlockCacheHit
 	BlockCacheAdd
 	BlockCacheAddFailures
@@ -1376,24 +1376,33 @@ func (opts *Options) Destroy() {
 	opts.bbto = nil
 }
 
-// GetTickerCount
+// GetTickerCount gets the current value of Ticker
 func (opts *Options) GetTickerCount(ticker Ticker) uint64 {
-	retval, _ := C.gorocksdb_get_ticker_count(opts.c, C.uint(ticker))
+	retval, _ := C.rocksdb_get_ticker_count(opts.c, C.uint(ticker))
 
 	return uint64(retval)
 }
 
+// GetAndResetTickerCount gets the current value of Ticker, and resets it to zero
 func (opts *Options) GetAndResetTickerCount(ticker Ticker) uint64 {
-	retval, _ := C.gorocksdb_get_and_reset_ticker_count(opts.c, C.uint(ticker))
+	retval, _ := C.rocksdb_get_and_reset_ticker_count(opts.c, C.uint(ticker))
 
 	return uint64(retval)
+}
+
+func (opts *Options) RecordTick(ticker Ticker, count uint64) {
+	C.rocksdb_record_tick(opts.c, C.uint(ticker), C.ulonglong(count))
+}
+
+func (opts *Options) SetTickerCount(ticker Ticker, count uint64) {
+	C.rocksdb_set_ticker_count(opts.c, C.uint(ticker), C.ulonglong(count))
 }
 
 func (opts *Options) SetStatsLevel(sl StatsLevel) {
-	C.gorocksdb_set_stats_level(opts.c, C.uchar(sl))
+	C.rocksdb_set_stats_level(opts.c, C.uchar(sl))
 }
 
 func (opts *Options) GetStatsLevel() StatsLevel {
-	ret := C.gorocksdb_get_stats_level(opts.c)
+	ret := C.rocksdb_get_stats_level(opts.c)
     return StatsLevel(ret)
 }
