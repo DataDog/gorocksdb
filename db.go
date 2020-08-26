@@ -300,6 +300,20 @@ func (db *DB) GetPinned(opts *ReadOptions, key []byte) (*PinnableSliceHandle, er
 	return NewNativePinnableSliceHandle(cHandle), nil
 }
 
+// GetPinnedCF returns the data associated with the key from the database and column family.
+func (db *DB) GetPinnedCF(opts *ReadOptions, cf *ColumnFamilyHandle, key []byte) (*PinnableSliceHandle, error) {
+	var (
+		cErr *C.char
+		cKey = byteToChar(key)
+	)
+	cHandle := C.rocksdb_get_pinned_cf(db.c, opts.c, cf.c, cKey, C.size_t(len(key)), &cErr)
+	if cErr != nil {
+		defer C.rocksdb_free(unsafe.Pointer(cErr))
+		return nil, errors.New(C.GoString(cErr))
+	}
+	return NewNativePinnableSliceHandle(cHandle), nil
+}
+
 // MultiGet returns the data associated with the passed keys from the database
 func (db *DB) MultiGet(opts *ReadOptions, keys ...[]byte) (Slices, error) {
 	cKeys, cKeySizes := byteSlicesToCSlices(keys)
@@ -761,7 +775,7 @@ func (db *DB) FlushCF(cf *ColumnFamilyHandle, opts *FlushOptions) error {
 		return errors.New(C.GoString(cErr))
 	}
 	return nil
-} 
+}
 
 // DisableFileDeletions disables file deletions and should be used when backup the database.
 func (db *DB) DisableFileDeletions() error {
