@@ -235,3 +235,9 @@ func (opts *BlockBasedTableOptions) SetFormatVersion(version int) {
 func (opts *BlockBasedTableOptions) SetIndexType(value IndexType) {
 	C.rocksdb_block_based_options_set_index_type(opts.c, C.int(value))
 }
+
+// SetFlushEveryBlockPolicy sets the table to perform a flush after inserting each key.  Useful for
+// testing only.
+func (opts *BlockBasedTableOptions) SetFlushEveryKeyPolicy() {
+	C.rocksdb_block_based_options_set_flush_every_key_policy(opts.c)
+}
