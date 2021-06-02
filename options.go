@@ -76,6 +76,7 @@ type Options struct {
 	// Hold references for GC.
 	env  *Env
 	bbto *BlockBasedTableOptions
+	cache     *Cache
 
 	// We keep these so we can free their memory in Destroy.
 	ccmp *C.rocksdb_comparator_t
@@ -1004,6 +1005,11 @@ func (opts *Options) SetRateLimiter(rateLimiter *RateLimiter) {
 	C.rocksdb_options_set_ratelimiter(opts.c, rateLimiter.c)
 }
 
+func (opts *Options) SetRowCache(cache *Cache) {
+	opts.cache = cache
+	C.rocksdb_options_set_row_cache(opts.c, cache.c)
+}
+
 // SetMaxSequentialSkipInIterations specifies whether an iteration->Next()
 // sequentially skips over keys with the same user-key or not.
 //
@@ -1210,4 +1216,5 @@ func (opts *Options) Destroy() {
 	opts.c = nil
 	opts.env = nil
 	opts.bbto = nil
+	opts.cache = nil
 }
