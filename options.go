@@ -118,6 +118,11 @@ func GetOptionsFromString(base *Options, optStr string) (*Options, error) {
 	return newOpt, nil
 }
 
+// UnsafeGetOptions returns the underlying c options.
+func (opts *Options) UnsafeGetOptions() unsafe.Pointer {
+	return unsafe.Pointer(opts.c)
+}
+
 // -------------------
 // Parameters that affect behavior
 
