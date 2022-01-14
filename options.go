@@ -918,6 +918,15 @@ func (opts *Options) SetStatsDumpPeriodSec(value uint) {
 	C.rocksdb_options_set_stats_dump_period_sec(opts.c, C.uint(value))
 }
 
+// SetDumpMallocStats sets whether to dump malloc stats with rocksdb.stats.
+//
+// If true, then print malloc stats together with rocksdb.stats
+// when printing to LOG.
+// Default: false
+func (opts *Options) SetDumpMallocStats(value bool) {
+	C.rocksdb_options_set_dump_malloc_stats(opts.c, boolToChar(value))
+}
+
 // SetAdviseRandomOnOpen specifies whether we will hint the underlying
 // file system that the file access pattern is random, when a sst file is opened.
 // Default: true
