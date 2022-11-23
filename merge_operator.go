@@ -2,6 +2,7 @@ package gorocksdb
 
 // #include "rocksdb/c.h"
 import "C"
+import "unsafe"
 
 // A MergeOperator specifies the SEMANTICS of a merge, which only
 // client knows. It could be numeric addition, list append, string
@@ -75,8 +76,8 @@ type MultiMerger interface {
 }
 
 // NewNativeMergeOperator creates a MergeOperator object.
-func NewNativeMergeOperator(c *C.rocksdb_mergeoperator_t) MergeOperator {
-	return nativeMergeOperator{c}
+func NewNativeMergeOperator(c unsafe.Pointer) MergeOperator {
+	return &nativeMergeOperator{c: (*C.rocksdb_mergeoperator_t)(c)}
 }
 
 type nativeMergeOperator struct {
