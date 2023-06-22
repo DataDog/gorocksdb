@@ -271,15 +271,13 @@ func (db *TransactionDB) NewCheckpoint() (*Checkpoint, error) {
 // NewIterator returns an Iterator over the database that uses the
 // ReadOptions given.
 func (db *TransactionDB) NewIterator(opts *ReadOptions) *Iterator {
-	cIter := C.rocksdb_transactiondb_create_iterator(db.c, opts.c)
-	return NewNativeIterator(unsafe.Pointer(cIter))
+	return NewNativeIterator(unsafe.Pointer(C.rocksdb_transactiondb_create_iterator(db.c, opts.c)))
 }
 
 // NewIteratorCF returns an Iterator over the column family that uses the
 // ReadOptions given.
 func (db *TransactionDB) NewIteratorCF(opts *ReadOptions, cf *ColumnFamilyHandle) *Iterator {
-	cIter := C.rocksdb_transactiondb_create_iterator_cf(db.c, opts.c, cf.c)
-	return NewNativeIterator(unsafe.Pointer(cIter))
+	return NewNativeIterator(unsafe.Pointer(C.rocksdb_transactiondb_create_iterator_cf(db.c, opts.c, cf.c)))
 }
 
 // Close closes the database.

@@ -180,15 +180,13 @@ func (transaction *Transaction) DeleteCF(cf *ColumnFamilyHandle, key []byte) err
 // NewIterator returns an Iterator over the database that uses the
 // ReadOptions given.
 func (transaction *Transaction) NewIterator(opts *ReadOptions) *Iterator {
-	cIter := C.rocksdb_transaction_create_iterator(transaction.c, opts.c)
-	return NewNativeIterator(unsafe.Pointer(cIter))
+	return NewNativeIterator(unsafe.Pointer(C.rocksdb_transaction_create_iterator(transaction.c, opts.c)))
 }
 
 // NewIteratorCF returns an Iterator over the column family that uses the
 // ReadOptions given.
 func (transaction *Transaction) NewIteratorCF(opts *ReadOptions, cf *ColumnFamilyHandle) *Iterator {
-	cIter := C.rocksdb_transaction_create_iterator_cf(transaction.c, opts.c, cf.c)
-	return NewNativeIterator(unsafe.Pointer(cIter))
+	return NewNativeIterator(unsafe.Pointer(C.rocksdb_transaction_create_iterator_cf(transaction.c, opts.c, cf.c)))
 }
 
 // Destroy deallocates the transaction object.
