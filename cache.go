@@ -28,6 +28,27 @@ func (c *Cache) GetPinnedUsage() uint64 {
 	return uint64(C.rocksdb_cache_get_pinned_usage(c.c))
 }
 
+// LRUCacheOptions are options for LRU Cache.
+type LRUCacheOptions struct {
+	c *C.rocksdb_lru_cache_options_t
+}
+
+// SetMemoryAllocator for this lru cache.
+func (l *LRUCacheOptions) SetMemoryAllocator(m *MemoryAllocator) {
+	C.rocksdb_lru_cache_options_set_memory_allocator(l.c, m.c)
+}
+
+// NewLRUCacheOptions creates lru cache options.
+func NewLRUCacheOptions() *LRUCacheOptions {
+	return &LRUCacheOptions{c: C.rocksdb_lru_cache_options_create()}
+}
+
+// Destroy lru cache options.
+func (l *LRUCacheOptions) Destroy() {
+	C.rocksdb_lru_cache_options_destroy(l.c)
+	l.c = nil
+}
+
 // Destroy deallocates the Cache object.
 func (c *Cache) Destroy() {
 	C.rocksdb_cache_destroy(c.c)
