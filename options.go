@@ -1105,15 +1105,18 @@ func (opts *Options) SetHashLinkListRep(bucketCount int) {
 //
 // indexSparseness: inside each prefix, need to build one index record for how
 //
+//	many keys for binary search inside each hash bucket.
+//
 // hugePageTlbSize: if <=0, allocate hash indexes and blooms from malloc. Otherwise from huge page TLB.
 //
 // encodingType: how to encode the keys. See enum EncodingType above for the choices.
 //
-// storeIndexInFile:
+// fullScanMode: mode for reading the whole file one record by one without using the index.
 //
-// huge_page_tlb_size:
+// storeIndexInFile: compute plain table index and bloom filter during
 //
-//	many keys for binary search inside each hash bucket.
+// file building and store it in file. When reading
+// file, index will be mapped instead of recomputation.
 func (opts *Options) SetPlainTableFactory(keyLen uint32, bloomBitsPerKey int, hashTableRatio float64, indexSparseness int, hugePageTlbSize int, encodingType EncodingType, fullScanMode bool, storeIndexInFile bool) {
 	C.rocksdb_options_set_plain_table_factory(opts.c, C.uint32_t(keyLen), C.int(bloomBitsPerKey), C.double(hashTableRatio), C.size_t(indexSparseness), C.size_t(hugePageTlbSize), C.char(encodingType), boolToChar(fullScanMode), boolToChar(storeIndexInFile))
 }
