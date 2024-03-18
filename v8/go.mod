@@ -1,6 +1,6 @@
 module github.com/DataDog/gorocksdb/v8
 
-go 1.22.0
+go 1.20
 
 require (
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c
