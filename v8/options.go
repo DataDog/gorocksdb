@@ -1043,6 +1043,17 @@ func (opts *Options) SetDumpMallocStats(value bool) {
 	C.rocksdb_options_set_dump_malloc_stats(opts.c, boolToChar(value))
 }
 
+// SetMemtableWholeKeyFiltering enable whole key bloom filter in memtable. Note this will only take effect
+// if memtable_prefix_bloom_size_ratio is not 0. Enabling whole key filtering
+// can potentially reduce CPU usage for point-look-ups.
+//
+// Default: false (disable)
+//
+// Dynamically changeable through SetOptions() API
+func (opts *Options) SetMemtableWholeKeyFiltering(value bool) {
+	C.rocksdb_options_set_memtable_whole_key_filtering(opts.c, boolToChar(value))
+}
+
 // EnableStatistics enable statistics.
 func (opts *Options) EnableStatistics() {
 	C.rocksdb_options_enable_statistics(opts.c)
