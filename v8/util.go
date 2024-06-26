@@ -1,6 +1,7 @@
 package gorocksdb
 
 // #include <stdlib.h>
+// #include "rocksdb/c.h"
 
 import "C"
 import "unsafe"
