@@ -2,9 +2,12 @@ package gorocksdb
 
 // #include <stdlib.h>
 // #include "rocksdb/c.h"
-
 import "C"
-import "unsafe"
+
+import (
+	"errors"
+	"unsafe"
+)
 
 // btoi converts a bool value to int.
 func btoi(b bool) int {
