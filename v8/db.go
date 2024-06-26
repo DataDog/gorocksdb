@@ -734,7 +734,7 @@ func (db *DB) CreateColumnFamilyWithTTL(opts *Options, name string, ttl int) (*C
 	var (
 		cErr  *C.char
 		cName = C.CString(name)
-		cTtl = C.int(ttl)
+		cTtl  = C.int(ttl)
 	)
 	defer C.free(unsafe.Pointer(cName))
 	cHandle := C.rocksdb_create_column_family_with_ttl(db.c, opts.c, cName, cTtl, &cErr)
@@ -907,7 +907,10 @@ func (db *DB) SetOptionsCF(cf *ColumnFamilyHandle, keys, values []string) (err e
 		&cValues[0],
 		&cErr,
 	)
-	err = fromCError(cErr)
+	if cErr != nil {
+		err = errors.New(C.GoString(cErr))
+		C.rocksdb_free(unsafe.Pointer(cErr))
+	}
 
 	// free before return
 	for i := range cKeys {

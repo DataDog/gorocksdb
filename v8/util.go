@@ -1,13 +1,9 @@
 package gorocksdb
 
 // #include <stdlib.h>
-// #include "rocksdb/c.h"
-import "C"
 
-import (
-	"errors"
-	"unsafe"
-)
+import "C"
+import "unsafe"
 
 // btoi converts a bool value to int.
 func btoi(b bool) int {
@@ -67,13 +63,4 @@ func charSlice(data **C.char, len C.int) []*C.char {
 // sizeSlice converts a C array of size_t to a []C.size_t.
 func sizeSlice(data *C.size_t, len C.int) []C.size_t {
 	return unsafe.Slice(data, int(len))
-}
-
-// fromCError returns go error and free c_err if need.
-func fromCError(cErr *C.char) (err error) {
-	if cErr != nil {
-		err = errors.New(C.GoString(cErr))
-		C.rocksdb_free(unsafe.Pointer(cErr))
-	}
-	return
 }
