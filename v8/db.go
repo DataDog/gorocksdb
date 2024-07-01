@@ -734,7 +734,7 @@ func (db *DB) CreateColumnFamilyWithTTL(opts *Options, name string, ttl int) (*C
 	var (
 		cErr  *C.char
 		cName = C.CString(name)
-		cTtl = C.int(ttl)
+		cTtl  = C.int(ttl)
 	)
 	defer C.free(unsafe.Pointer(cName))
 	cHandle := C.rocksdb_create_column_family_with_ttl(db.c, opts.c, cName, cTtl, &cErr)
@@ -881,6 +881,44 @@ func (db *DB) SetOptions(keys, values []string) error {
 		return errors.New(C.GoString(cErr))
 	}
 	return nil
+}
+
+// SetOptionsCF dynamically changes options through the SetOptions API for specific Column Family.
+func (db *DB) SetOptionsCF(cf *ColumnFamilyHandle, keys, values []string) (err error) {
+	numKeys := len(keys)
+	if numKeys == 0 {
+		return nil
+	}
+
+	cKeys := make([]*C.char, numKeys)
+	cValues := make([]*C.char, numKeys)
+	for i := range keys {
+		cKeys[i] = C.CString(keys[i])
+		cValues[i] = C.CString(values[i])
+	}
+
+	var cErr *C.char
+
+	C.rocksdb_set_options_cf(
+		db.c,
+		cf.c,
+		C.int(numKeys),
+		&cKeys[0],
+		&cValues[0],
+		&cErr,
+	)
+	if cErr != nil {
+		err = errors.New(C.GoString(cErr))
+		C.rocksdb_free(unsafe.Pointer(cErr))
+	}
+
+	// free before return
+	for i := range cKeys {
+		C.free(unsafe.Pointer(cKeys[i]))
+		C.free(unsafe.Pointer(cValues[i]))
+	}
+
+	return
 }
 
 // LiveFileMetadata is a metadata which is associated with each SST file.

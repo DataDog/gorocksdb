@@ -1221,6 +1221,20 @@ func (opts *Options) SetAtomicFlush(value bool) {
 	C.rocksdb_options_set_atomic_flush(opts.c, C.uchar(btoi(value)))
 }
 
+// AddCompactOnDeletionCollectorFactory marks a SST
+// file as need-compaction when it observe at least "D" deletion
+// entries in any "N" consecutive entries or the ratio of tombstone
+// entries in the whole file >= the specified deletion ratio.
+func (opts *Options) AddCompactOnDeletionCollectorFactory(windowSize, numDelsTrigger uint) {
+        C.rocksdb_options_add_compact_on_deletion_collector_factory(opts.c, C.size_t(windowSize), C.size_t(numDelsTrigger))
+}
+
+// AddCompactOnDeletionCollectorFactoryWithRatio similar to AddCompactOnDeletionCollectorFactory
+// with specific deletion ratio.
+func (opts *Options) AddCompactOnDeletionCollectorFactoryWithRatio(windowSize, numDelsTrigger uint, deletionRatio float64) {
+        C.rocksdb_options_add_compact_on_deletion_collector_factory_del_ratio(opts.c, C.size_t(windowSize), C.size_t(numDelsTrigger), C.double(deletionRatio))
+}
+
 // SetMaxSubcompactions represents the maximum number of threads that will
 // concurrently perform a compaction job by breaking it into multiple,
 // smaller ones that are run simultaneously.

@@ -128,6 +128,19 @@ func (db *TransactionDB) ReleaseSnapshot(snapshot *Snapshot) {
 	snapshot.c = nil
 }
 
+// GetBaseDB gets base db.
+func (db *TransactionDB) GetBaseDB() *DB {
+	base := C.rocksdb_transactiondb_get_base_db(db.c)
+	return &DB{c: base}
+}
+
+// CloseBaseDBOfTransactionDB closes base db of TransactionDB.
+func CloseBaseDBOfTransactionDB(db *DB) {
+	if db != nil && db.c != nil {
+		C.rocksdb_transactiondb_close_base_db(db.c)
+	}
+}
+
 // TransactionBegin begins a new transaction
 // with the WriteOptions and TransactionOptions given.
 func (db *TransactionDB) TransactionBegin(
