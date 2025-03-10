@@ -928,6 +928,8 @@ type LiveFileMetadata struct {
 	Level            int
 	Size             int64
 	SmallestKey      []byte
+	Entries          int64
+	Deletions        int64
 	LargestKey       []byte
 }
 
