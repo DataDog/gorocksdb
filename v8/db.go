@@ -944,6 +944,8 @@ func (db *DB) GetLiveFilesMetaData() []LiveFileMetadata {
 		liveFile.Name = C.GoString(C.rocksdb_livefiles_name(lf, i))
 		liveFile.Level = int(C.rocksdb_livefiles_level(lf, i))
 		liveFile.Size = int64(C.rocksdb_livefiles_size(lf, i))
+		liveFile.Entries = int64(C.rocksdb_livefiles_entries(lf, i))
+		liveFile.Deletions = int64(C.rocksdb_livefiles_deletions(lf, i))
 		liveFile.ColumnFamilyName = C.GoString(C.rocksdb_livefiles_column_family_name(lf, i))
 
 		var cSize C.size_t
