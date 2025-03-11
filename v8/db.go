@@ -923,11 +923,14 @@ func (db *DB) SetOptionsCF(cf *ColumnFamilyHandle, keys, values []string) (err e
 
 // LiveFileMetadata is a metadata which is associated with each SST file.
 type LiveFileMetadata struct {
-	Name        string
-	Level       int
-	Size        int64
-	SmallestKey []byte
-	LargestKey  []byte
+	Name             string
+	ColumnFamilyName string
+	Level            int
+	Size             int64
+	SmallestKey      []byte
+	Entries          int64
+	Deletions        int64
+	LargestKey       []byte
 }
 
 // GetLiveFilesMetaData returns a list of all table files with their
@@ -943,6 +946,9 @@ func (db *DB) GetLiveFilesMetaData() []LiveFileMetadata {
 		liveFile.Name = C.GoString(C.rocksdb_livefiles_name(lf, i))
 		liveFile.Level = int(C.rocksdb_livefiles_level(lf, i))
 		liveFile.Size = int64(C.rocksdb_livefiles_size(lf, i))
+		liveFile.Entries = int64(C.rocksdb_livefiles_entries(lf, i))
+		liveFile.Deletions = int64(C.rocksdb_livefiles_deletions(lf, i))
+		liveFile.ColumnFamilyName = C.GoString(C.rocksdb_livefiles_column_family_name(lf, i))
 
 		var cSize C.size_t
 		key := C.rocksdb_livefiles_smallestkey(lf, i, &cSize)
