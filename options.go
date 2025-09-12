@@ -1255,6 +1255,17 @@ func (opts *Options) SetAtomicFlush(value bool) {
 	C.rocksdb_options_set_atomic_flush(opts.c, C.uchar(btoi(value)))
 }
 
+// SetWalCompression sets wal_compression.
+//
+// At present, only ZSTD compression is supported. RocksDB will be able
+// to read compressed WAL records regardless of the current wal_compression
+// settings.
+//
+// Default: NoCompression
+func (opts *Options) SetWalCompression(value CompressionType) {
+	C.rocksdb_options_set_wal_compression(opts.c, C.int(value))
+}
+
 // Destroy deallocates the Options object.
 func (opts *Options) Destroy() {
 	C.rocksdb_options_destroy(opts.c)
