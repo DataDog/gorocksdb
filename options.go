@@ -1229,6 +1229,15 @@ func (opts *Options) SetOptimizeFiltersForHits(value bool) {
 	C.rocksdb_options_set_optimize_filters_for_hits(opts.c, C.int(btoi(value)))
 }
 
+// SetWalCompression sets wal_compression.
+//
+// At present, only ZSTD compression is supported. RocksDB will be able
+// to read compressed WAL records regardless of the current wal_compression
+// settings.
+func (opts *Options) SetWalCompression(value CompressionType) {
+	C.rocksdb_options_set_wal_compression(opts.c, C.int(value))
+}
+
 // SetAtomicFlush sets atomic_flush
 // RocksDB supports atomic flush of multiple column families if the DB option
 // atomic_flush is set to true. The execution result of flushing multiple
