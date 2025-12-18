@@ -105,6 +105,7 @@ func (opts *ReadOptions) SetTailing(value bool) {
 // This is because ordering is not guaranteed outside of prefix domain.
 // There is no lower bound on the iterator. If needed, that can be easily
 // implemented.
+// NOTE: MAKE SURE TO WAIT TO CALL DESTROY ON THE READ OPTIONS UNTIL YOU ARE DONE WITH THE ITERATOR
 // Default: nullptr
 func (opts *ReadOptions) SetIterateUpperBound(key []byte) {
 	oldBound := opts.upperBound
@@ -119,6 +120,7 @@ func (opts *ReadOptions) SetIterateUpperBound(key []byte) {
 // the smallest key at which the backward iterator can return an entry.
 // Once the bound is passed, Valid() will be false.
 // "iterate_lower_bound" is inclusive ie the bound value is a valid entry.
+// NOTE: MAKE SURE TO WAIT TO CALL DESTROY ON THE READ OPTIONS UNTIL YOU ARE DONE WITH THE ITERATOR
 // Default: nullptr
 func (opts *ReadOptions) SetIterateLowerBound(key []byte) {
 	oldBound := opts.lowerBound
