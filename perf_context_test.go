@@ -17,8 +17,8 @@ func TestPerfContext(t *testing.T) {
 	ro := NewDefaultReadOptions()
 	defer ro.Destroy()
 
-	SetPerfLevel(PerfLevelEnableCount)
-	defer SetPerfLevel(PerfLevelDisable)
+	SetPerfLevel(KEnableCount)
+	defer SetPerfLevel(KDisable)
 
 	pc := NewPerfContext()
 	defer pc.Destroy()
@@ -51,14 +51,14 @@ func TestPerfContext(t *testing.T) {
 	ensure.True(t, strings.Contains(report, "get_from_memtable_count"))
 
 	// reads and comparisons should have accumulated
-	ensure.True(t, pc.Metric(UserKeyComparisonCount) > 0)
-	ensure.True(t, pc.Metric(GetReadBytes) > 0)
+	ensure.True(t, pc.Metric(0) > 0)  // rocksdb_user_key_comparison_count
+	ensure.True(t, pc.Metric(7) > 0)  // rocksdb_get_read_bytes
 
 	// reset zeroes all counters
 	pc.Reset()
-	ensure.DeepEqual(t, pc.Metric(GetFromMemtableCount), uint64(0))
-	ensure.DeepEqual(t, pc.Metric(UserKeyComparisonCount), uint64(0))
-	ensure.DeepEqual(t, pc.Metric(GetReadBytes), uint64(0))
+	ensure.DeepEqual(t, pc.Metric(16), uint64(0)) // rocksdb_get_from_memtable_count
+	ensure.DeepEqual(t, pc.Metric(0), uint64(0))  // rocksdb_user_key_comparison_count
+	ensure.DeepEqual(t, pc.Metric(7), uint64(0))  // rocksdb_get_read_bytes
 }
 
 func TestPerfContextTimingMetrics(t *testing.T) {
@@ -70,8 +70,8 @@ func TestPerfContextTimingMetrics(t *testing.T) {
 	ro := NewDefaultReadOptions()
 	defer ro.Destroy()
 
-	SetPerfLevel(PerfLevelEnableTimeExceptForMutex)
-	defer SetPerfLevel(PerfLevelDisable)
+	SetPerfLevel(KEnableTimeExceptForMutex)
+	defer SetPerfLevel(KDisable)
 
 	pc := NewPerfContext()
 	defer pc.Destroy()
@@ -90,13 +90,13 @@ func TestPerfContextTimingMetrics(t *testing.T) {
 	}
 
 	// timing metrics should be populated at this perf level
-	ensure.True(t, pc.Metric(WriteWalTime) > 0)
-	ensure.True(t, pc.Metric(WriteMemtableTime) > 0)
-	ensure.True(t, pc.Metric(GetFromMemtableTime) > 0)
+	ensure.True(t, pc.Metric(29) > 0) // rocksdb_write_wal_time
+	ensure.True(t, pc.Metric(30) > 0) // rocksdb_write_memtable_time
+	ensure.True(t, pc.Metric(15) > 0) // rocksdb_get_from_memtable_time
 
 	// mutex timing metrics should remain zero at this perf level
-	ensure.DeepEqual(t, pc.Metric(DbMutexLockNanos), uint64(0))
-	ensure.DeepEqual(t, pc.Metric(DbConditionWaitNanos), uint64(0))
+	ensure.DeepEqual(t, pc.Metric(33), uint64(0)) // rocksdb_db_mutex_lock_nanos
+	ensure.DeepEqual(t, pc.Metric(34), uint64(0)) // rocksdb_db_condition_wait_nanos
 
 	// report should include timing field names
 	report := pc.Report(true)

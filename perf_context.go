@@ -1,122 +1,127 @@
 package gorocksdb
 
-// #include "stdlib.h"
+// #include <stdlib.h>
 // #include "rocksdb/c.h"
 import "C"
-import "unsafe"
+import (
+	"unsafe"
+)
 
+// PerfContext a thread local context for gathering performance counter efficiently
+// and transparently.
 type PerfContext struct {
 	c *C.rocksdb_perfcontext_t
 }
 
+// NewPerfContext returns new perf context.
 func NewPerfContext() *PerfContext {
-	return &PerfContext{c: C.rocksdb_perfcontext_create()}
+	return &PerfContext{
+		c: C.rocksdb_perfcontext_create(),
+	}
 }
 
-func (c *PerfContext) Reset() {
-	C.rocksdb_perfcontext_reset(c.c)
+// Destroy perf context object.
+func (ctx *PerfContext) Destroy() {
+	C.rocksdb_perfcontext_destroy(ctx.c)
+	ctx.c = nil
 }
 
-func (c *PerfContext) Report(excludeZeroCounters bool) string {
-	cExcludeZeroCounters := boolToChar(excludeZeroCounters)
-	cReport := C.rocksdb_perfcontext_report(c.c, cExcludeZeroCounters)
-	defer C.rocksdb_free(unsafe.Pointer(cReport))
-	return C.GoString(cReport)
+// Reset context.
+func (ctx *PerfContext) Reset() {
+	C.rocksdb_perfcontext_reset(ctx.c)
 }
 
-func (c *PerfContext) Metric(metric PerfMetric) uint64 {
-	return uint64(C.rocksdb_perfcontext_metric(c.c, C.int(metric)))
+// Report with exclusion of zero counter.
+func (ctx *PerfContext) Report(excludeZeroCounters bool) (value string) {
+	cValue := C.rocksdb_perfcontext_report(ctx.c, boolToChar(excludeZeroCounters))
+	value = C.GoString(cValue)
+	C.free(unsafe.Pointer(cValue))
+	return
 }
 
-func (c *PerfContext) Destroy() {
-	C.rocksdb_perfcontext_destroy(c.c)
-	c.c = nil
+// Metric returns value of a metric by its id.
+//
+// Id is one of:
+//
+//	enum {
+//		rocksdb_user_key_comparison_count = 0,
+//		rocksdb_block_cache_hit_count,
+//		rocksdb_block_read_count,
+//		rocksdb_block_read_byte,
+//		rocksdb_block_read_time,
+//		rocksdb_block_checksum_time,
+//		rocksdb_block_decompress_time,
+//		rocksdb_get_read_bytes,
+//		rocksdb_multiget_read_bytes,
+//		rocksdb_iter_read_bytes,
+//		rocksdb_internal_key_skipped_count,
+//		rocksdb_internal_delete_skipped_count,
+//		rocksdb_internal_recent_skipped_count,
+//		rocksdb_internal_merge_count,
+//		rocksdb_get_snapshot_time,
+//		rocksdb_get_from_memtable_time,
+//		rocksdb_get_from_memtable_count,
+//		rocksdb_get_post_process_time,
+//		rocksdb_get_from_output_files_time,
+//		rocksdb_seek_on_memtable_time,
+//		rocksdb_seek_on_memtable_count,
+//		rocksdb_next_on_memtable_count,
+//		rocksdb_prev_on_memtable_count,
+//		rocksdb_seek_child_seek_time,
+//		rocksdb_seek_child_seek_count,
+//		rocksdb_seek_min_heap_time,
+//		rocksdb_seek_max_heap_time,
+//		rocksdb_seek_internal_seek_time,
+//		rocksdb_find_next_user_entry_time,
+//		rocksdb_write_wal_time,
+//		rocksdb_write_memtable_time,
+//		rocksdb_write_delay_time,
+//		rocksdb_write_pre_and_post_process_time,
+//		rocksdb_db_mutex_lock_nanos,
+//		rocksdb_db_condition_wait_nanos,
+//		rocksdb_merge_operator_time_nanos,
+//		rocksdb_read_index_block_nanos,
+//		rocksdb_read_filter_block_nanos,
+//		rocksdb_new_table_block_iter_nanos,
+//		rocksdb_new_table_iterator_nanos,
+//		rocksdb_block_seek_nanos,
+//		rocksdb_find_table_nanos,
+//		rocksdb_bloom_memtable_hit_count,
+//		rocksdb_bloom_memtable_miss_count,
+//		rocksdb_bloom_sst_hit_count,
+//		rocksdb_bloom_sst_miss_count,
+//		rocksdb_key_lock_wait_time,
+//		rocksdb_key_lock_wait_count,
+//		rocksdb_env_new_sequential_file_nanos,
+//		rocksdb_env_new_random_access_file_nanos,
+//		rocksdb_env_new_writable_file_nanos,
+//		rocksdb_env_reuse_writable_file_nanos,
+//		rocksdb_env_new_random_rw_file_nanos,
+//		rocksdb_env_new_directory_nanos,
+//		rocksdb_env_file_exists_nanos,
+//		rocksdb_env_get_children_nanos,
+//		rocksdb_env_get_children_file_attributes_nanos,
+//		rocksdb_env_delete_file_nanos,
+//		rocksdb_env_create_dir_nanos,
+//		rocksdb_env_create_dir_if_missing_nanos,
+//		rocksdb_env_delete_dir_nanos,
+//		rocksdb_env_get_file_size_nanos,
+//		rocksdb_env_get_file_modification_time_nanos,
+//		rocksdb_env_rename_file_nanos,
+//		rocksdb_env_link_file_nanos,
+//		rocksdb_env_lock_file_nanos,
+//		rocksdb_env_unlock_file_nanos,
+//		rocksdb_env_new_logger_nanos,
+//		rocksdb_number_async_seek,
+//		rocksdb_blob_cache_hit_count,
+//		rocksdb_blob_read_count,
+//		rocksdb_blob_read_byte,
+//		rocksdb_blob_read_time,
+//		rocksdb_blob_checksum_time,
+//		rocksdb_blob_decompress_time,
+//		rocksdb_total_metric_count = 77
+//	  };
+func (ctx *PerfContext) Metric(id int) uint64 {
+	value := C.rocksdb_perfcontext_metric(ctx.c, C.int(id))
+	return uint64(value)
 }
-
-func SetPerfLevel(level PerfLevel) {
-	C.rocksdb_set_perf_level(C.int(level))
-}
-
-type PerfLevel uint
-
-const (
-	PerfLevelUninitialized            = PerfLevel(0)
-	PerfLevelDisable                  = PerfLevel(1)
-	PerfLevelEnableCount              = PerfLevel(2)
-	PerfLevelEnableTimeExceptForMutex = PerfLevel(3)
-	PerfLevelEnableTime               = PerfLevel(4)
-	PerfLevelOutOfBounds              = PerfLevel(5)
-)
-
-type PerfMetric int
-
-const (
-	UserKeyComparisonCount            = PerfMetric(0)
-	BlockCacheHitCount                = PerfMetric(1)
-	BlockReadCount                    = PerfMetric(2)
-	BlockReadByte                     = PerfMetric(3)
-	BlockReadTime                     = PerfMetric(4)
-	BlockChecksumTime                 = PerfMetric(5)
-	BlockDecompressTime               = PerfMetric(6)
-	GetReadBytes                      = PerfMetric(7)
-	MultiGetReadBytes                 = PerfMetric(8)
-	IterReadBytes                     = PerfMetric(9)
-	InternalKeySkippedCount           = PerfMetric(10)
-	InternalDeleteSkippedCount        = PerfMetric(11)
-	InternalRecentSkippedCount        = PerfMetric(12)
-	InternalMergeCount                = PerfMetric(13)
-	GetSnapshotTime                   = PerfMetric(14)
-	GetFromMemtableTime               = PerfMetric(15)
-	GetFromMemtableCount              = PerfMetric(16)
-	GetPostProcessTime                = PerfMetric(17)
-	GetFromOutputFilesTime            = PerfMetric(18)
-	SeekOnMemtableTime                = PerfMetric(19)
-	SeekOnMemtableCount               = PerfMetric(20)
-	NextOnMemtableCount               = PerfMetric(21)
-	PrevOnMemtableCount               = PerfMetric(22)
-	SeekChildSeekTime                 = PerfMetric(23)
-	SeekChildSeekCount                = PerfMetric(24)
-	SeekMinHeapTime                   = PerfMetric(25)
-	SeekMaxHeapTime                   = PerfMetric(26)
-	SeekInternalSeekTime              = PerfMetric(27)
-	FindNextUserEntryTime             = PerfMetric(28)
-	WriteWalTime                      = PerfMetric(29)
-	WriteMemtableTime                 = PerfMetric(30)
-	WriteDelayTime                    = PerfMetric(31)
-	WritePreAndPostProcessTime        = PerfMetric(32)
-	DbMutexLockNanos                  = PerfMetric(33)
-	DbConditionWaitNanos              = PerfMetric(34)
-	MergeOperatorTimeNanos            = PerfMetric(35)
-	ReadIndexBlockNanos               = PerfMetric(36)
-	ReadFilterBlockNanos              = PerfMetric(37)
-	NewTableBlockIterNanos            = PerfMetric(38)
-	NewTableIteratorNanos             = PerfMetric(39)
-	BlockSeekNanos                    = PerfMetric(40)
-	FindTableNanos                    = PerfMetric(41)
-	BloomMemtableHitCount             = PerfMetric(42)
-	BloomMemtableMissCount            = PerfMetric(43)
-	BloomSstHitCount                  = PerfMetric(44)
-	BloomSstMissCount                 = PerfMetric(45)
-	KeyLockWaitTime                   = PerfMetric(46)
-	KeyLockWaitCount                  = PerfMetric(47)
-	EnvNewSequentialFileNanos         = PerfMetric(48)
-	EnvNewRandomAccessFileNanos       = PerfMetric(49)
-	EnvNewWritableFileNanos           = PerfMetric(50)
-	EnvReuseWritableFileNanos         = PerfMetric(51)
-	EnvNewRandomRwFileNanos           = PerfMetric(52)
-	EnvNewDirectoryNanos              = PerfMetric(53)
-	EnvFileExistsNanos                = PerfMetric(54)
-	EnvGetChildrenNanos               = PerfMetric(55)
-	EnvGetChildrenFileAttributesNanos = PerfMetric(56)
-	EnvDeleteFileNanos                = PerfMetric(57)
-	EnvCreateDirNanos                 = PerfMetric(58)
-	EnvCreateDirIfMissingNanos        = PerfMetric(59)
-	EnvDeleteDirNanos                 = PerfMetric(60)
-	EnvGetFileSizeNanos               = PerfMetric(61)
-	EnvGetFileModificationTimeNanos   = PerfMetric(62)
-	EnvRenameFileNanos                = PerfMetric(63)
-	EnvLinkFileNanos                  = PerfMetric(64)
-	EnvLockFileNanos                  = PerfMetric(65)
-	EnvUnlockFileNanos                = PerfMetric(66)
-	EnvNewLoggerNanos                 = PerfMetric(67)
-)
