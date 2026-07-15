@@ -977,6 +977,14 @@ func (db *DB) CompactRangeCF(cf *ColumnFamilyHandle, r Range) {
 	C.rocksdb_compact_range_cf(db.c, cf.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
 }
 
+// CompactRangeCFOpt runs a manual compaction on the Range of keys given on the
+// given column family with provided options. This is not likely to be needed for typical usage.
+func (db *DB) CompactRangeCFOpt(cf *ColumnFamilyHandle, r Range, opt *CompactRangeOptions) {
+	cStart := byteToChar(r.Start)
+	cLimit := byteToChar(r.Limit)
+	C.rocksdb_compact_range_cf_opt(db.c, cf.c, opt.c, cStart, C.size_t(len(r.Start)), cLimit, C.size_t(len(r.Limit)))
+}
+
 // Flush triggers a manuel flush for the database.
 func (db *DB) Flush(opts *FlushOptions) error {
 	var cErr *C.char
