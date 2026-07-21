@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
