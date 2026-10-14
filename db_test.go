@@ -3,7 +3,9 @@ package gorocksdb
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/facebookgo/ensure"
@@ -12,6 +14,56 @@ import (
 func TestOpenDb(t *testing.T) {
 	db := newTestDB(t, "TestOpenDb", nil)
 	defer db.Close()
+}
+
+func TestDBVerifyChecksum(t *testing.T) {
+	db := newTestDB(t, "TestDBVerifyChecksum", nil)
+	wo := NewDefaultWriteOptions()
+	fo := NewDefaultFlushOptions()
+	defer func() {
+		fo.Destroy()
+		wo.Destroy()
+		db.Close()
+	}()
+
+	ensure.Nil(t, db.Put(wo, []byte("key"), []byte("value")))
+	ensure.Nil(t, db.Flush(fo))
+	ensure.True(t, len(db.GetLiveFilesMetaData()) > 0)
+	ensure.Nil(t, db.VerifyChecksum())
+}
+
+func TestDBVerifyChecksumDetectsCorruption(t *testing.T) {
+	db := newTestDB(t, "TestDBVerifyChecksumDetectsCorruption", nil)
+	wo := NewDefaultWriteOptions()
+	fo := NewDefaultFlushOptions()
+	defer func() {
+		fo.Destroy()
+		wo.Destroy()
+		db.Close()
+	}()
+
+	ensure.Nil(t, db.Put(wo, []byte("key"), []byte("value")))
+	ensure.Nil(t, db.Flush(fo))
+
+	liveFiles := db.GetLiveFilesMetaData()
+	ensure.True(t, len(liveFiles) > 0)
+
+	// The first data block starts at offset 0. Flipping a byte there changes
+	// the block contents without touching the SST footer.
+	path := filepath.Join(db.Name(), liveFiles[0].Name)
+	file, err := os.OpenFile(path, os.O_RDWR, 0)
+	ensure.Nil(t, err)
+	b := []byte{0}
+	_, err = file.ReadAt(b, 0)
+	ensure.Nil(t, err)
+	b[0] ^= 0xff
+	_, err = file.WriteAt(b, 0)
+	ensure.Nil(t, err)
+	ensure.Nil(t, file.Close())
+
+	err = db.VerifyChecksum()
+	ensure.NotNil(t, err)
+	ensure.True(t, strings.Contains(err.Error(), "Corruption"))
 }
 
 func TestOpenDbColumnFamiliesWithTTL(t *testing.T) {

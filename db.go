@@ -1,7 +1,7 @@
 package gorocksdb
 
 // #include <stdlib.h>
-// #include "rocksdb/c.h"
+// #include "gorocksdb.h"
 import "C"
 import (
 	"errors"
@@ -1141,6 +1141,23 @@ func (db *DB) NewCheckpoint() (*Checkpoint, error) {
 	}
 
 	return NewNativeCheckpoint(cCheckpoint), nil
+}
+
+// VerifyChecksum verifies the block checksums of every live SST file in the
+// database. It reads every SST file and blocks until verification finishes.
+func (db *DB) VerifyChecksum() error {
+	// gorocksdb_verify_checksum is our C++ bridge (verify_checksum.cc). Our
+	// pinned RocksDB has no C API for this. RocksDB v11.8.0+ provides
+	// rocksdb_verify_checksum; switch to it and delete the bridge after upgrading.
+	var cErr *C.char
+	if C.gorocksdb_verify_checksum(db.c, &cErr) == 0 {
+		return nil
+	}
+	if cErr == nil {
+		return errors.New("rocksdb: checksum verification failed")
+	}
+	defer C.rocksdb_free(unsafe.Pointer(cErr))
+	return errors.New(C.GoString(cErr))
 }
 
 // Close closes the database.
