@@ -1,11 +1,40 @@
+#ifndef GOROCKSDB_H
+#define GOROCKSDB_H
+
 #include <stdlib.h>
 #include "rocksdb/c.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // This API provides convenient C wrapper functions for rocksdb client.
 
 /* Base */
 
 extern void gorocksdb_destruct_handler(void* state);
+/*
+ * Verifies block checksums in all live SST files.
+ *
+ * Returns 0 on success and nonzero on failure. On failure, *errptr is set
+ * to a malloc-allocated message when allocation succeeds. Any existing
+ * *errptr is freed first, matching RocksDB's C API convention.
+ */
+extern int gorocksdb_verify_checksum(rocksdb_t* db, char** errptr);
+
+/* SSTFileReader */
+
+typedef struct gorocksdb_sstfilereader_t gorocksdb_sstfilereader_t;
+
+// create returns NULL on failure. open and verify_checksum return 0 on
+// success, nonzero on failure. Errors use the same ownership as above.
+extern gorocksdb_sstfilereader_t* gorocksdb_sstfilereader_create(
+    const rocksdb_options_t* options, char** errptr);
+extern int gorocksdb_sstfilereader_open(
+    gorocksdb_sstfilereader_t* reader, const char* path, char** errptr);
+extern int gorocksdb_sstfilereader_verify_checksum(
+    gorocksdb_sstfilereader_t* reader, char** errptr);
+extern void gorocksdb_sstfilereader_destroy(gorocksdb_sstfilereader_t* reader);
 
 /* CompactionFilter */
 
@@ -28,3 +57,9 @@ extern void gorocksdb_mergeoperator_delete_value(void* state, const char* v, siz
 /* Slice Transform */
 
 extern rocksdb_slicetransform_t* gorocksdb_slicetransform_create(uintptr_t idx);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#endif  /* GOROCKSDB_H */
