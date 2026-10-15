@@ -22,6 +22,20 @@ extern void gorocksdb_destruct_handler(void* state);
  */
 extern int gorocksdb_verify_checksum(rocksdb_t* db, char** errptr);
 
+/* SSTFileReader */
+
+typedef struct gorocksdb_sstfilereader_t gorocksdb_sstfilereader_t;
+
+// create returns NULL on failure. open and verify_checksum return 0 on
+// success, nonzero on failure. Errors use the same ownership as above.
+extern gorocksdb_sstfilereader_t* gorocksdb_sstfilereader_create(
+    const rocksdb_options_t* options, char** errptr);
+extern int gorocksdb_sstfilereader_open(
+    gorocksdb_sstfilereader_t* reader, const char* path, char** errptr);
+extern int gorocksdb_sstfilereader_verify_checksum(
+    gorocksdb_sstfilereader_t* reader, char** errptr);
+extern void gorocksdb_sstfilereader_destroy(gorocksdb_sstfilereader_t* reader);
+
 /* CompactionFilter */
 
 extern rocksdb_compactionfilter_t* gorocksdb_compactionfilter_create(uintptr_t idx);
