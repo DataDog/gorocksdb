@@ -86,6 +86,12 @@ func (h *PinnableSliceHandle) Data() []byte {
 	return charToByte(cValue, cValLen)
 }
 
+// Exists returns if the key exists. Unlike checking Data() for nil, this tells an
+// empty value apart from a missing key.
+func (h *PinnableSliceHandle) Exists() bool {
+	return h.c != nil
+}
+
 // Destroy calls the destructor of the underlying pinnable slice handle.
 func (h *PinnableSliceHandle) Destroy() {
 	C.rocksdb_pinnableslice_destroy(h.c)

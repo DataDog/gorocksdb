@@ -1,7 +1,10 @@
 package gorocksdb
 
 import (
+	"bytes"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/facebookgo/ensure"
@@ -226,4 +229,178 @@ func TestColumnFamilyMultiGet(t *testing.T) {
 	ensure.DeepEqual(t, values[0].Data(), givenVal1)
 	ensure.DeepEqual(t, values[1].Data(), givenVal2)
 	ensure.DeepEqual(t, values[2].Data(), givenVal3)
+}
+
+func newTestDBCFPinned(t *testing.T, noBlockCache bool) (db *DB, cfh []*ColumnFamilyHandle, dir string, cleanup func()) {
+	dir, err := ioutil.TempDir("", "gorocksdb-TestColumnFamilyGetPinned")
+	ensure.Nil(t, err)
+
+	bbto := NewDefaultBlockBasedTableOptions()
+	bbto.SetNoBlockCache(noBlockCache)
+	opts := NewDefaultOptions()
+	opts.SetCreateIfMissingColumnFamilies(true)
+	opts.SetCreateIfMissing(true)
+	opts.SetCompression(NoCompression)
+	opts.SetBlockBasedTableFactory(bbto)
+	db, cfh, err = OpenDbColumnFamilies(opts, dir, []string{"default", "guide"}, []*Options{opts, opts})
+	ensure.Nil(t, err)
+	cleanup = func() {
+		for _, cf := range cfh {
+			cf.Destroy()
+		}
+		db.Close()
+		opts.Destroy()
+		bbto.Destroy()
+		os.RemoveAll(dir)
+	}
+	return db, cfh, dir, cleanup
+}
+
+func flushCF(t *testing.T, db *DB, cf *ColumnFamilyHandle) {
+	fo := NewDefaultFlushOptions()
+	defer fo.Destroy()
+	fo.SetWait(true)
+	ensure.Nil(t, db.FlushCF(cf, fo))
+}
+
+// ensureGetPinnedCFMatchesGetCF checks that GetPinnedCF returns the same value and the same
+// found / not-found outcome as GetCF.
+func ensureGetPinnedCFMatchesGetCF(t *testing.T, db *DB, ro *ReadOptions, cf *ColumnFamilyHandle, key []byte) {
+	want, err := db.GetCF(ro, cf, key)
+	ensure.Nil(t, err)
+	defer want.Free()
+
+	got, err := db.GetPinnedCF(ro, cf, key)
+	ensure.Nil(t, err)
+	defer got.Destroy()
+
+	ensure.DeepEqual(t, got.Exists(), want.Exists())
+	ensure.True(t, bytes.Equal(got.Data(), want.Data()))
+	ensure.DeepEqual(t, len(got.Data()), want.Size())
+}
+
+func TestColumnFamilyGetPinned(t *testing.T) {
+	givenVals := map[string][]byte{
+		"small": []byte("world"),
+		"empty": {},
+		// Larger than a block, and large enough to be heap allocated on every Get.
+		"large": bytes.Repeat([]byte("0123456789abcdef"), 2<<20),
+		"":      []byte("value-for-empty-key"),
+	}
+
+	for _, tc := range []struct {
+		name         string
+		noBlockCache bool
+		flush        bool
+	}{
+		// Memtable hits are always copied into the PinnableSlice.
+		{name: "memtable", noBlockCache: true},
+		// Without a block cache, SST values are copied into the PinnableSlice.
+		{name: "sst-no-block-cache", noBlockCache: true, flush: true},
+		// With a block cache, SST values are pinned to the cached block.
+		{name: "sst-block-cache", noBlockCache: false, flush: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db, cfh, _, cleanup := newTestDBCFPinned(t, tc.noBlockCache)
+			defer cleanup()
+
+			wo := NewDefaultWriteOptions()
+			defer wo.Destroy()
+			ro := NewDefaultReadOptions()
+			defer ro.Destroy()
+
+			for k, v := range givenVals {
+				ensure.Nil(t, db.PutCF(wo, cfh[1], []byte(k), v))
+			}
+			if tc.flush {
+				flushCF(t, db, cfh[1])
+			}
+
+			for k := range givenVals {
+				ensureGetPinnedCFMatchesGetCF(t, db, ro, cfh[1], []byte(k))
+				// The keys only exist in cfh[1].
+				ensureGetPinnedCFMatchesGetCF(t, db, ro, cfh[0], []byte(k))
+			}
+			ensureGetPinnedCFMatchesGetCF(t, db, ro, cfh[1], []byte("noexist"))
+
+			// An empty value is found, it is not a missing key.
+			v, err := db.GetPinnedCF(ro, cfh[1], []byte("empty"))
+			ensure.Nil(t, err)
+			ensure.True(t, v.Exists())
+			ensure.DeepEqual(t, len(v.Data()), 0)
+			v.Destroy()
+
+			v, err = db.GetPinnedCF(ro, cfh[1], []byte("noexist"))
+			ensure.Nil(t, err)
+			ensure.False(t, v.Exists())
+			ensure.True(t, v.Data() == nil)
+			v.Destroy()
+
+			// A deleted key is missing.
+			ensure.Nil(t, db.DeleteCF(wo, cfh[1], []byte("small")))
+			v, err = db.GetPinnedCF(ro, cfh[1], []byte("small"))
+			ensure.Nil(t, err)
+			ensure.False(t, v.Exists())
+			v.Destroy()
+		})
+	}
+}
+
+func TestColumnFamilyGetPinnedOutlivesOverwrite(t *testing.T) {
+	for _, noBlockCache := range []bool{true, false} {
+		db, cfh, _, cleanup := newTestDBCFPinned(t, noBlockCache)
+		defer cleanup()
+
+		wo := NewDefaultWriteOptions()
+		defer wo.Destroy()
+		ro := NewDefaultReadOptions()
+		defer ro.Destroy()
+
+		givenKey := []byte("hello")
+		ensure.Nil(t, db.PutCF(wo, cfh[1], givenKey, []byte("world1")))
+		flushCF(t, db, cfh[1])
+
+		v, err := db.GetPinnedCF(ro, cfh[1], givenKey)
+		ensure.Nil(t, err)
+		defer v.Destroy()
+
+		// A value stays valid and unchanged while it is held, regardless of later writes and flushes.
+		ensure.Nil(t, db.PutCF(wo, cfh[1], givenKey, []byte("world2")))
+		flushCF(t, db, cfh[1])
+		ensure.DeepEqual(t, v.Data(), []byte("world1"))
+		ensureGetPinnedCFMatchesGetCF(t, db, ro, cfh[1], givenKey)
+	}
+}
+
+func TestColumnFamilyGetPinnedError(t *testing.T) {
+	db, cfh, dir, cleanup := newTestDBCFPinned(t, true)
+	defer cleanup()
+
+	wo := NewDefaultWriteOptions()
+	defer wo.Destroy()
+	ro := NewDefaultReadOptions()
+	defer ro.Destroy()
+
+	givenKey := []byte("hello")
+	ensure.Nil(t, db.PutCF(wo, cfh[1], givenKey, bytes.Repeat([]byte("a"), 1<<20)))
+	flushCF(t, db, cfh[1])
+
+	// Corrupt the value's data block. Without a block cache every Get re-reads the block from disk,
+	// so the checksum mismatch must surface as an error, not as a missing key or bad data.
+	ssts, err := filepath.Glob(filepath.Join(dir, "*.sst"))
+	ensure.Nil(t, err)
+	ensure.DeepEqual(t, len(ssts), 1)
+	f, err := os.OpenFile(ssts[0], os.O_RDWR, 0)
+	ensure.Nil(t, err)
+	_, err = f.WriteAt([]byte("b"), 1<<19)
+	ensure.Nil(t, err)
+	ensure.Nil(t, f.Close())
+
+	_, wantErr := db.GetCF(ro, cfh[1], givenKey)
+	ensure.NotNil(t, wantErr)
+
+	v, err := db.GetPinnedCF(ro, cfh[1], givenKey)
+	ensure.True(t, v == nil)
+	ensure.NotNil(t, err)
+	ensure.DeepEqual(t, err.Error(), wantErr.Error())
 }
